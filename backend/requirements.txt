@@ -1,0 +1,27 @@
+# FastAPI core
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# Database
+motor==3.6.0              # async MongoDB driver (3.6+ required for pymongo 4.9+)
+pymongo==4.9.1
+neo4j==5.24.0             # Neo4j AuraDB driver
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.12
+
+# LLM / HTTP
+httpx==0.27.2
+openai==1.51.0            # OpenAI-compatible client (works for OpenRouter + Groq)
+
+# Utilities
+pydantic[email]==2.9.2
+pydantic-settings==2.5.2
+python-dotenv==1.0.1
+tenacity==9.0.0           # retry logic for LLM calls
+
+# Dev
+pytest==8.3.3
+pytest-asyncio==0.24.0
