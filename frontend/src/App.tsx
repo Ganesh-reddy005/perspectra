@@ -16,6 +16,8 @@ import Dashboard from './pages/Dashboard';
 import Problems from './pages/Problems';
 import ProblemSolve from './pages/ProblemSolve';
 import KnowledgeGraph from './pages/KnowledgeGraph';
+import LearningPath from './pages/LearningPath';
+import ReviewHistory from './pages/ReviewHistory';
 
 function App() {
   const initAuth = useAuthStore((state) => state.initAuth);
@@ -49,7 +51,7 @@ function App() {
         }}
       />
 
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Landing />} />
@@ -98,6 +100,24 @@ function App() {
               <ProtectedRoute>
                 <Navbar />
                 <KnowledgeGraph />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/learning-path"
+            element={
+              <ProtectedRoute>
+                <Navbar />
+                <LearningPath />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/review-history"
+            element={
+              <ProtectedRoute>
+                <Navbar />
+                <ReviewHistory />
               </ProtectedRoute>
             }
           />

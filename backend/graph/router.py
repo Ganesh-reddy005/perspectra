@@ -70,12 +70,19 @@ async def get_recommendation(user: dict = Depends(get_current_user)):
     # and that the student hasn't mastered yet
     result = await run_query("""
         MATCH (c:Concept)
-        WHERE NOT (s:Student {id: $uid})-[:HAS_SKILL {level: 0.7}]->(c)
-        AND NOT (s:Student {id: $uid})-[:HAS_GAP]->(c)
+        WHERE NOT EXISTS {
+            MATCH (s:Student {id: $uid})-[r:HAS_SKILL]->(c)
+            WHERE r.level >= 0.7
+        }
+        AND NOT EXISTS {
+            MATCH (s:Student {id: $uid})-[:HAS_GAP]->(c)
+        }
         OPTIONAL MATCH (c)-[:DEPENDS_ON]->(prereq:Concept)
         WITH c, COLLECT(prereq) AS prereqs
-        WHERE ALL(p IN prereqs WHERE (s:Student {id: $uid})-[:HAS_SKILL]->(p))
-           OR SIZE(prereqs) = 0
+        WHERE SIZE(prereqs) = 0
+           OR ALL(p IN prereqs WHERE EXISTS {
+               MATCH (s:Student {id: $uid})-[:HAS_SKILL]->(p)
+           })
         RETURN c.id AS id, c.name AS name, c.tier AS tier, c.difficulty AS difficulty
         ORDER BY c.tier ASC, c.difficulty ASC
         LIMIT 3
@@ -100,16 +107,21 @@ async def get_learning_path(
     from_concept: str = Query(..., description="Name of starting concept"),
     to_concept: str = Query(..., description="Name of target concept"),
 ):
-    """Find the shortest learning path between two concepts."""
+    """
+    Find the shortest learning path between two concepts.
+    Uses undirected DEPENDS_ON traversal so it works regardless of edge direction,
+    then orders the result from the requested 'from' concept to 'to'.
+    """
+    # Try undirected first — works with any DEPENDS_ON direction in the dataset
     result = await run_query("""
         MATCH path = shortestPath(
-            (a:Concept {name: $from_concept})-[:DEPENDS_ON*]->(b:Concept {name: $to_concept})
+            (a:Concept {name: $from_concept})-[:DEPENDS_ON*]-(b:Concept {name: $to_concept})
         )
         RETURN [node IN nodes(path) | {id: node.id, name: node.name, tier: node.tier}] AS path_nodes,
                length(path) AS hops
     """, {"from_concept": from_concept, "to_concept": to_concept})
 
     if not result:
-        return {"path": [], "message": f"No dependency path from '{from_concept}' to '{to_concept}'"}
+        return {"path": [], "message": f"No dependency path between '{from_concept}' and '{to_concept}'"}
 
     return {"path": result[0]["path_nodes"], "hops": result[0]["hops"]}

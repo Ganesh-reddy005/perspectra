@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # Auth
     jwt_secret_key: str = "change-me"
     jwt_algorithm: str = "HS256"
-    jwt_expire_hours: int = 24
+    jwt_expire_hours: int = 72  # 3 days
 
     # App
     app_env: str = "development"

@@ -10,6 +10,8 @@ interface Profile {
   strengths: string[];
   mistake_patterns: string[];
   recent_hints: string[];
+  known_concepts?: string[];
+  recent_weaknesses?: string[];
   submissions_count: number;
   insights: any;
 }

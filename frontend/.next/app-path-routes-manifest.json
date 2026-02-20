@@ -1,0 +1,14 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/dashboard/page": "/dashboard",
+  "/favicon.ico/route": "/favicon.ico",
+  "/graph/page": "/graph",
+  "/login/page": "/login",
+  "/onboarding/page": "/onboarding",
+  "/page": "/",
+  "/problems/[id]/page": "/problems/[id]",
+  "/problems/page": "/problems",
+  "/profile/page": "/profile",
+  "/register/page": "/register"
+}

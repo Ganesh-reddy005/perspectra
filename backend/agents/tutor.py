@@ -26,6 +26,17 @@ def _build_tutor_context(
     hints_given = len(profile.get("recent_hints", []))
     session_depth = "early" if hints_given < 2 else "mid" if hints_given < 5 else "deep"
 
+    # Detect beginner mode explicitly — used by the prompt to unlock syntax hints
+    is_beginner = (
+        profile.get('experience_level', 'beginner') == 'beginner'
+        or profile.get('submissions_count', 0) < 5
+    )
+
+    # Syntax topics flagged by the Reviewer — the tutor should reference these
+    all_topics = profile.get('topics_to_revise', [])
+    syntax_topics = [t for t in all_topics if 'Python:' in t or 'syntax' in t.lower() or 'string' in t.lower()]
+    algo_topics   = [t for t in all_topics if t not in syntax_topics]
+
     history_str = "None yet."
     if conversation_history:
         history_str = "\n".join(
@@ -35,6 +46,7 @@ def _build_tutor_context(
 
     return f"""## PERSONALISATION PROFILE
 Experience Level:   {profile.get('experience_level', 'beginner')}
+Mode:               {"⚡ BEGINNER MODE — syntax hints allowed" if is_beginner else "SOCRATIC MODE — conceptual nudges only"}
 Preferred Style:    {profile.get('preferred_style', 'visual')}
 Thinking Style:     {profile.get('thinking_style', 'unknown')}
 Background:         {profile.get('background', 'Not specified')}
@@ -48,6 +60,12 @@ Recent Weaknesses:  {', '.join(profile.get('recent_weaknesses', [])) or 'None ye
 Known Concepts:     {', '.join(profile.get('known_concepts', [])) or 'Not specified'}
 Session Depth:      {session_depth} (hints given this problem: {hints_given})
 
+## SYNTAX TOPICS TO REVISE (flagged by Reviewer)
+{chr(10).join(f'  • {t}' for t in syntax_topics) if syntax_topics else '  None flagged — student may know their syntax.'}
+
+## ALGORITHM TOPICS TO REVISE
+{chr(10).join(f'  • {t}' for t in algo_topics) if algo_topics else '  None flagged.'}
+
 ## PROBLEM CONTEXT
 Title:       {problem.get('title', 'Unknown')}
 Description: {problem.get('description', '')}
@@ -59,7 +77,8 @@ Concepts:    {', '.join(problem.get('concept_ids', []))}
 ## STUDENT'S CURRENT QUESTION
 {user_question}
 
-Respond as a Socratic tutor. Guide, never answer. End with exactly ONE question."""
+Respond as instructed for {"BEGINNER MODE" if is_beginner else "SOCRATIC MODE"}. End with exactly ONE question."""
+
 
 
 def _build_hint_context(
@@ -89,12 +108,25 @@ def _build_hint_context(
 ```
 (calibrate hint to what they've already written — don't repeat what's already correct)"""
 
+    is_beginner = (
+        profile.get('experience_level', 'beginner') == 'beginner'
+        or profile.get('submissions_count', 0) < 5
+    )
+
+    # Syntax-specific topics flagged by Reviewer for this beginner
+    all_topics = profile.get('topics_to_revise', [])
+    syntax_topics = [t for t in all_topics if 'Python:' in t or 'syntax' in t.lower() or 'string' in t.lower()]
+
     return f"""## PERSONALISATION PROFILE
 Experience Level:   {profile.get('experience_level', 'beginner')}
+Mode:               {"⚡ BEGINNER MODE — syntax example allowed" if is_beginner else "SOCRATIC MODE — conceptual only"}
 Thinking Style:     {profile.get('thinking_style', 'unknown')}
 Known Gaps:         {', '.join(profile.get('gaps', [])) or 'None'}
 Mistake Patterns:   {', '.join(profile.get('mistake_patterns', [])) or 'None'}
 Recent Weaknesses:  {', '.join(profile.get('recent_weaknesses', [])) or 'None'}
+
+## SYNTAX TOPICS REVIEWER FLAGGED (prioritise these for the code snippet)
+{chr(10).join(f'  • {t}' for t in syntax_topics) if syntax_topics else '  None — infer from student code.'}
 
 ## PROBLEM
 Title:       {problem.get('title', 'Unknown')}
@@ -106,7 +138,8 @@ Constraints: {'; '.join(problem.get('constraints', [])) or 'None'}
 ## PREVIOUS HINTS (DO NOT REPEAT OR PARAPHRASE ANY OF THESE)
 {prev_hints_str}
 
-Generate ONE new Socratic hint that progresses beyond the above."""
+Generate ONE hint calibrated to {"BEGINNER MODE" if is_beginner else "SOCRATIC MODE"} as per your instructions."""
+
 
 
 async def run_tutor(

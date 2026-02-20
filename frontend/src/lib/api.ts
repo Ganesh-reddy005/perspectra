@@ -45,6 +45,13 @@ export const profileAPI = {
   getOnboardingQuestions: () => api.get('/profile/onboarding/questions'),
   submitOnboarding: (answers: Record<string, string>) =>
     api.post('/profile/onboarding', { answers }),
+  update: (data: Partial<{
+    experience_level: string;
+    preferred_style: string;
+    goal: string;
+    background: string;
+    known_concepts: string[];
+  }>) => api.patch('/profile/me', data),
 };
 
 // Problems API

@@ -2,6 +2,7 @@
 Profile router — /profile/me and /profile/onboarding
 """
 
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -13,9 +14,16 @@ from prompts.loader import load_prompt
 router = APIRouter(prefix="/profile", tags=["profile"])
 
 
-
 class OnboardingRequest(BaseModel):
     answers: dict  # {"q1": "...", "q2": "...", ...}
+
+
+class ProfileUpdateRequest(BaseModel):
+    experience_level: Optional[str] = None
+    preferred_style: Optional[str] = None
+    goal: Optional[str] = None
+    background: Optional[str] = None
+    known_concepts: Optional[list] = None
 
 
 ONBOARDING_QUESTIONS = [
@@ -74,4 +82,14 @@ async def get_my_profile(user: dict = Depends(get_current_user)):
     profile = await get_profile(user["sub"])
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
+    return profile
+
+
+@router.patch("/me")
+async def patch_my_profile(payload: ProfileUpdateRequest, user: dict = Depends(get_current_user)):
+    """Partial profile update — no LLM call, plain field overrides."""
+    updates = {k: v for k, v in payload.dict().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields provided to update")
+    profile = await update_profile(user["sub"], updates)
     return profile
